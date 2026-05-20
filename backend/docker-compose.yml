@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   backend:
-    build: .
+    image: ghcr.io/jgugamelo/whatsapp-backend:latest
     ports:
       - "3001:3001"
     environment:
@@ -15,6 +15,7 @@ services:
       - WAHA_BASE_URL=${WAHA_BASE_URL}
       - WAHA_API_KEY=${WAHA_API_KEY}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_MODEL=${OPENAI_MODEL}
       - FRONTEND_URL=${FRONTEND_URL}
       - WEBHOOK_SECRET=${WEBHOOK_SECRET}
     restart: unless-stopped
