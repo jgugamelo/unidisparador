@@ -9,11 +9,5 @@
   ],
   "routes": [
     { "src": "/(.*)", "dest": "dist/main.js" }
-  ],
-  "crons": [
-    {
-      "path": "/message-queue/process-tick",
-      "schedule": "* * * * *"
-    }
   ]
 }
