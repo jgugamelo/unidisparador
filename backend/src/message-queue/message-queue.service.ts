@@ -118,7 +118,10 @@ export class MessageQueueService {
         }
       }
 
-      contactDelay += minDelay + Math.random() * (maxDelay - minDelay);
+      // Avança o contactDelay para DEPOIS da última mensagem deste contato,
+      // depois adiciona o intervalo randômico — garante que o próximo contato
+      // começa pelo menos intervalo_min após o fim da sequência anterior.
+      contactDelay += (mensagens.length - 1) * intraDelay + minDelay + Math.random() * (maxDelay - minDelay);
     }
 
     if (enqueued === 0) {
