@@ -343,10 +343,10 @@ export default function CampaignDetailPage() {
               return (
                 <div key={item.id}>
                   {intervalSecs !== null && intervalSecs > 0 && (
-                    <div className="flex items-center gap-2 px-5 py-0.5">
-                      <div className="h-px flex-1 bg-slate-50" />
-                      <span className="text-[9px] text-slate-300 tabular-nums">+{intervalSecs}s</span>
-                      <div className="h-px flex-1 bg-slate-50" />
+                    <div className="flex items-center gap-2 px-5 py-1">
+                      <div className="h-px flex-1 bg-slate-100" />
+                      <span className="text-xs text-slate-400 font-medium tabular-nums bg-slate-50 border border-slate-200 rounded-full px-2 py-0.5">+{intervalSecs}s</span>
+                      <div className="h-px flex-1 bg-slate-100" />
                     </div>
                   )}
                   <div className="px-5 py-3 flex items-center gap-3" style={{ fontSize: queueFontSize }}>
