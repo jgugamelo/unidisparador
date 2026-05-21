@@ -377,7 +377,11 @@ export default function CampaignDetailPage() {
                         <span className="badge bg-slate-50 text-slate-500" style={{ fontSize: queueFontSize - 3 }}>{item.tipo}</span>
                         {item.sent_at && <p className="text-emerald-500 mt-0.5" style={{ fontSize: queueFontSize - 3 }}>Enviado {new Date(item.sent_at).toLocaleTimeString('pt-BR')}</p>}
                         {!item.sent_at && item.scheduled_at && <p className="text-slate-400 mt-0.5" style={{ fontSize: queueFontSize - 3 }}>Agendado {new Date(item.scheduled_at).toLocaleString('pt-BR')}</p>}
-                        {item.erro && <p className="text-red-400 mt-0.5 truncate max-w-32" style={{ fontSize: queueFontSize - 3 }}>{item.erro}</p>}
+                        {item.erro && (
+                          <p title={item.erro} className="text-red-400 mt-0.5 truncate max-w-40 cursor-help" style={{ fontSize: queueFontSize - 3 }}>
+                            ⚠ {item.erro}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -450,7 +454,11 @@ export default function CampaignDetailPage() {
                               <div className="text-right flex-shrink-0">
                                 {item.sent_at && <p className="text-emerald-500" style={{ fontSize: queueFontSize - 3 }}>Enviado {new Date(item.sent_at).toLocaleTimeString('pt-BR')}</p>}
                                 {!item.sent_at && item.scheduled_at && <p className="text-slate-400" style={{ fontSize: queueFontSize - 3 }}>Agendado {new Date(item.scheduled_at).toLocaleString('pt-BR')}</p>}
-                                {item.erro && <p className="text-red-400 truncate max-w-36" style={{ fontSize: queueFontSize - 3 }}>{item.erro}</p>}
+                                {item.erro && (
+                                  <p title={item.erro} className="text-red-400 truncate max-w-48 cursor-help" style={{ fontSize: queueFontSize - 3 }}>
+                                    ⚠ {item.erro}
+                                  </p>
+                                )}
                               </div>
                             </div>
                           );
