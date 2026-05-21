@@ -5,8 +5,32 @@ import { contactsApi, normalizePhoneInput } from '@/lib/api';
 import {
   Upload, Search, Ban, Users, CheckCircle2, X,
   ChevronLeft, ChevronRight, Plus, ClipboardList, UserPlus,
-  Pencil, Trash2, AlertTriangle,
+  Pencil, Trash2, AlertTriangle, Download,
 } from 'lucide-react';
+
+function downloadTemplate() {
+  const rows = [
+    // Cabeçalho
+    ['nome', 'telefone', 'email', 'tags', 'origem', 'curso', 'categoria'],
+    // Linha de instruções (será ignorada pelo parser se não tiver telefone válido — serve de guia visual)
+    ['# INSTRUÇÕES: preencha a partir da linha 3. Campos obrigatórios: telefone. Tags: separe por vírgula.', '', '', '', '', '', ''],
+    // Exemplos
+    ['Maria Silva',     '11999990001', 'maria@email.com',   'lead,quente',   'instagram', 'Direito',    'Lead quente'],
+    ['João Oliveira',   '21988880002', '',                  'lead',          'site',      'Medicina',   ''],
+    ['Ana Souza',       '31977770003', 'ana@empresa.com',   'cliente,vip',   'indicacao', '',           'Cliente VIP'],
+    ['Carlos Lima',     '5511966660004','',                 '',              'manual',    '',           ''],
+  ];
+
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\r\n');
+  const bom = '﻿'; // BOM para Excel reconhecer UTF-8
+  const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'template_contatos.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
 import clsx from 'clsx';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -193,6 +217,9 @@ export default function ContactsPage() {
               Importando...
             </span>
           )}
+          <button onClick={downloadTemplate} className="btn-ghost" title="Baixar planilha modelo para preenchimento">
+            <Download size={15} /> Template
+          </button>
           <input ref={fileRef} type="file" accept=".csv,.xlsx" className="hidden" onChange={handleFile} />
           <button onClick={() => fileRef.current?.click()} className="btn-ghost">
             <Upload size={15} /> CSV / XLSX
