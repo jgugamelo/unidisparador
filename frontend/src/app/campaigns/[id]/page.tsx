@@ -73,6 +73,7 @@ export default function CampaignDetailPage() {
   );
 
   const [requeueError, setRequeueError] = useState('');
+  const [queueFontSize, setQueueFontSize] = useState(13);
   const [editingWindow, setEditingWindow] = useState(false);
   const [windowForm, setWindowForm] = useState({ janela_inicio: '', janela_fim: '' });
 
@@ -314,33 +315,60 @@ export default function CampaignDetailPage() {
           <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
             <Users size={15} className="text-slate-400" />
             <p className="text-sm font-semibold text-slate-700">Fila de envio</p>
-            <span className="ml-auto text-xs text-slate-400">{(queueItems as any[]).length} itens</span>
+            <span className="ml-auto flex items-center gap-3">
+              <span className="text-xs text-slate-400">{(queueItems as any[]).length} itens</span>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setQueueFontSize(s => Math.max(10, s - 1))}
+                  className="w-6 h-6 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold flex items-center justify-center text-sm leading-none"
+                >−</button>
+                <span className="text-xs text-slate-400 w-6 text-center tabular-nums">{queueFontSize}</span>
+                <button
+                  onClick={() => setQueueFontSize(s => Math.min(20, s + 1))}
+                  className="w-6 h-6 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold flex items-center justify-center text-sm leading-none"
+                >+</button>
+              </div>
+            </span>
           </div>
           <div className="divide-y divide-slate-50 max-h-96 overflow-y-auto">
-            {(queueItems as any[]).map((item: any) => {
+            {(queueItems as any[]).map((item: any, idx: number) => {
               const cfg = QUEUE_STATUS_ICON[item.status] || { Icon: AlertCircle, cls: 'text-slate-400' };
               const { Icon, cls } = cfg;
               const contact = item.contacts as any;
+              const prevItem = idx > 0 ? (queueItems as any[])[idx - 1] : null;
+              const getTs = (i: any) => i.sent_at || i.scheduled_at;
+              const intervalSecs = prevItem && getTs(item) && getTs(prevItem)
+                ? Math.round((new Date(getTs(item)).getTime() - new Date(getTs(prevItem)).getTime()) / 1000)
+                : null;
               return (
-                <div key={item.id} className="px-5 py-3 flex items-center gap-3 text-sm">
-                  <Icon size={15} className={clsx('flex-shrink-0', cls)} />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-slate-800 truncate">{contact?.nome || '—'}</p>
-                    <p className="text-xs text-slate-400 font-mono">{contact?.telefone_normalizado || ''}</p>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <span className="badge bg-slate-50 text-slate-500 text-[10px]">{item.tipo}</span>
-                    {item.sent_at && (
-                      <p className="text-[10px] text-emerald-500 mt-0.5">
-                        Enviado {new Date(item.sent_at).toLocaleTimeString('pt-BR')}
-                      </p>
-                    )}
-                    {!item.sent_at && item.scheduled_at && (
-                      <p className="text-[10px] text-slate-400 mt-0.5">
-                        Agendado {new Date(item.scheduled_at).toLocaleString('pt-BR')}
-                      </p>
-                    )}
-                    {item.erro && <p className="text-[10px] text-red-400 mt-0.5 truncate max-w-32">{item.erro}</p>}
+                <div key={item.id}>
+                  {intervalSecs !== null && intervalSecs > 0 && (
+                    <div className="flex items-center gap-2 px-5 py-0.5">
+                      <div className="h-px flex-1 bg-slate-50" />
+                      <span className="text-[9px] text-slate-300 tabular-nums">+{intervalSecs}s</span>
+                      <div className="h-px flex-1 bg-slate-50" />
+                    </div>
+                  )}
+                  <div className="px-5 py-3 flex items-center gap-3" style={{ fontSize: queueFontSize }}>
+                    <Icon size={queueFontSize + 2} className={clsx('flex-shrink-0', cls)} />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-slate-800 truncate">{contact?.nome || '—'}</p>
+                      <p className="text-slate-400 font-mono" style={{ fontSize: queueFontSize - 2 }}>{contact?.telefone_normalizado || ''}</p>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <span className="badge bg-slate-50 text-slate-500" style={{ fontSize: queueFontSize - 3 }}>{item.tipo}</span>
+                      {item.sent_at && (
+                        <p className="text-emerald-500 mt-0.5" style={{ fontSize: queueFontSize - 3 }}>
+                          Enviado {new Date(item.sent_at).toLocaleTimeString('pt-BR')}
+                        </p>
+                      )}
+                      {!item.sent_at && item.scheduled_at && (
+                        <p className="text-slate-400 mt-0.5" style={{ fontSize: queueFontSize - 3 }}>
+                          Agendado {new Date(item.scheduled_at).toLocaleString('pt-BR')}
+                        </p>
+                      )}
+                      {item.erro && <p className="text-red-400 mt-0.5 truncate max-w-32" style={{ fontSize: queueFontSize - 3 }}>{item.erro}</p>}
+                    </div>
                   </div>
                 </div>
               );
