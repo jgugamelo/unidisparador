@@ -72,7 +72,8 @@ export class ContactsService {
     const { data } = await this.supabase.db
       .from('contacts')
       .select('tags')
-      .not('tags', 'is', null);
+      .not('tags', 'is', null)
+      .range(0, 9999); // suporta até 10k contatos sem bater no limite padrão do PostgREST
     const all = (data || []).flatMap((c: any) => c.tags || []);
     return [...new Set(all)].sort();
   }
@@ -123,7 +124,8 @@ export class ContactsService {
     if (status) query = query.eq('status_contato', status);
     if (nivel_risco) query = query.eq('nivel_risco', nivel_risco);
     if (origem) query = query.eq('origem', origem);
-    if (tag) query = query.contains('tags', [tag]);
+    // .contains() gera notação {val} (text[]) — JSONB precisa de ["val"]
+    if (tag) query = (query as any).filter('tags', 'cs', JSON.stringify([tag]));
     if (search) {
       query = query.or(`nome.ilike.%${search}%,telefone_normalizado.ilike.%${search}%`);
     }

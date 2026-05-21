@@ -90,6 +90,7 @@ export default function ContactsPage() {
   const [status, setStatus]       = useState('');
   const [tag, setTag]             = useState('');
   const [page, setPage]           = useState(1);
+  const [limit, setLimit]         = useState(50);
   const [importResult, setImportResult] = useState<any>(null);
 
   // ── Create modal ──────────────────────────────────────────
@@ -116,8 +117,8 @@ export default function ContactsPage() {
 
   // ── Queries ───────────────────────────────────────────────
   const { data, isLoading } = useQuery(
-    ['contacts', search, status, tag, page],
-    () => contactsApi.list({ search, status, tag, page, limit: 50 }).then(r => r.data),
+    ['contacts', search, status, tag, page, limit],
+    () => contactsApi.list({ search, status, tag, page, limit }).then(r => r.data),
     { keepPreviousData: true },
   );
 
@@ -355,14 +356,28 @@ export default function ContactsPage() {
           </tbody>
         </table>
 
-        {total > 50 && (
-          <div className="flex items-center justify-between px-5 py-3.5 border-t border-slate-100 bg-slate-50/40">
-            <p className="text-xs text-slate-400">{total.toLocaleString('pt-BR')} contatos</p>
+        {total > 0 && (
+          <div className="flex items-center justify-between px-5 py-3.5 border-t border-slate-100 bg-slate-50/40 flex-wrap gap-2">
+            <div className="flex items-center gap-3">
+              <p className="text-xs text-slate-400">{total.toLocaleString('pt-BR')} contatos</p>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-slate-400">Por página:</span>
+                {[10, 50, 100, 250].map(n => (
+                  <button key={n} onClick={() => { setLimit(n); setPage(1); }}
+                    className={clsx('px-2 py-0.5 rounded text-xs font-medium transition-colors',
+                      limit === n ? 'bg-slate-700 text-white' : 'text-slate-500 hover:bg-slate-100')}>
+                    {n}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="flex items-center gap-1">
               <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
                 className="p-1.5 text-slate-400 hover:bg-slate-100 rounded-lg disabled:opacity-30"><ChevronLeft size={15} /></button>
-              <span className="px-3 py-1 text-xs font-medium text-slate-600">Página {page}</span>
-              <button onClick={() => setPage(p => p + 1)} disabled={contacts.length < 50}
+              <span className="px-3 py-1 text-xs font-medium text-slate-600">
+                Página {page} de {Math.ceil(total / limit)}
+              </span>
+              <button onClick={() => setPage(p => p + 1)} disabled={page >= Math.ceil(total / limit)}
                 className="p-1.5 text-slate-400 hover:bg-slate-100 rounded-lg disabled:opacity-30"><ChevronRight size={15} /></button>
             </div>
           </div>
