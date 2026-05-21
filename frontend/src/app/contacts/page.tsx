@@ -151,7 +151,7 @@ export default function ContactsPage() {
 
   const openEdit = (c: any) => {
     setEditContact(c);
-    setEditForm({ nome: c.nome || '', telefone: c.telefone_normalizado || '', email: c.email || '', origem: c.origem || 'manual', curso: c.curso || '', categoria: c.categoria || '' });
+    setEditForm({ nome: c.nome || '', telefone: c.telefone_normalizado || '', email: c.email || '', origem: c.origem || 'manual', curso: c.curso || '', categoria: c.categoria || '', status_contato: c.status_contato || 'apto_para_envio' });
     setEditTags(c.tags || []);
     setEditNewTag('');
   };
@@ -520,6 +520,14 @@ export default function ContactsPage() {
                     ))}
                   </select>
                 </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1.5">Status</label>
+                <select value={editForm.status_contato} onChange={e => setEditForm((f: any) => ({ ...f, status_contato: e.target.value }))} className="input">
+                  {STATUS_OPTIONS.map(s => (
+                    <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
+                  ))}
+                </select>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>

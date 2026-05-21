@@ -166,14 +166,15 @@ export class ContactsService {
     return this.updateStatus(id, 'bloqueado');
   }
 
-  async update(id: string, body: { nome?: string; telefone?: string; email?: string; origem?: string; tags?: string[]; curso?: string; categoria?: string }) {
+  async update(id: string, body: { nome?: string; telefone?: string; email?: string; origem?: string; tags?: string[]; curso?: string; categoria?: string; status_contato?: string }) {
     const updates: any = {};
-    if (body.nome !== undefined)      updates.nome = body.nome;
-    if (body.email !== undefined)     updates.email = body.email;
-    if (body.origem !== undefined)    updates.origem = body.origem;
-    if (body.tags !== undefined)      updates.tags = body.tags;
-    if (body.curso !== undefined)     updates.curso = body.curso;
-    if (body.categoria !== undefined) updates.categoria = body.categoria;
+    if (body.nome !== undefined)           updates.nome = body.nome;
+    if (body.email !== undefined)          updates.email = body.email;
+    if (body.origem !== undefined)         updates.origem = body.origem;
+    if (body.tags !== undefined)           updates.tags = body.tags;
+    if (body.curso !== undefined)          updates.curso = body.curso;
+    if (body.categoria !== undefined)      updates.categoria = body.categoria;
+    if (body.status_contato !== undefined) updates.status_contato = body.status_contato;
     if (body.telefone !== undefined) {
       const normalized = this.normalizePhone(body.telefone);
       if (!normalized) throw new BadRequestException('Telefone inválido');
