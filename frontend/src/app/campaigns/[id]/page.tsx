@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { campaignsApi } from '@/lib/api';
@@ -74,7 +74,19 @@ export default function CampaignDetailPage() {
 
   const [requeueError, setRequeueError] = useState('');
   const [queueFontSize, setQueueFontSize] = useState(13);
+  const [queueView, setQueueView] = useState<'agrupado' | 'cronologico'>('agrupado');
   const [editingWindow, setEditingWindow] = useState(false);
+
+  // Agrupa itens por contato preservando ordem de primeiro envio
+  const groupedQueue = useMemo(() => {
+    const map = new Map<string, any[]>();
+    for (const item of queueItems as any[]) {
+      const key = item.contact_id || item.id;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(item);
+    }
+    return Array.from(map.values());
+  }, [queueItems]);
   const [windowForm, setWindowForm] = useState({ janela_inicio: '', janela_fim: '' });
 
   const startMut   = useMutation(() => campaignsApi.start(id),   { onSuccess: () => qc.invalidateQueries(['campaign', id]) });
@@ -312,68 +324,144 @@ export default function CampaignDetailPage() {
       {/* Queue items */}
       {(queueItems as any[]).length > 0 && (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-          <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
+          <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-2 flex-wrap">
             <Users size={15} className="text-slate-400" />
             <p className="text-sm font-semibold text-slate-700">Fila de envio</p>
             <span className="ml-auto flex items-center gap-3">
+              <div className="flex rounded-lg overflow-hidden border border-slate-200 text-xs">
+                {(['agrupado', 'cronologico'] as const).map(v => (
+                  <button key={v} onClick={() => setQueueView(v)}
+                    className={clsx('px-2.5 py-1 font-medium transition-colors', queueView === v ? 'bg-slate-700 text-white' : 'bg-white text-slate-500 hover:bg-slate-50')}>
+                    {v === 'agrupado' ? 'Por contato' : 'Cronológico'}
+                  </button>
+                ))}
+              </div>
               <span className="text-xs text-slate-400">{(queueItems as any[]).length} itens</span>
               <div className="flex items-center gap-1">
-                <button
-                  onClick={() => setQueueFontSize(s => Math.max(10, s - 1))}
-                  className="w-6 h-6 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold flex items-center justify-center text-sm leading-none"
-                >−</button>
+                <button onClick={() => setQueueFontSize(s => Math.max(10, s - 1))}
+                  className="w-6 h-6 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold flex items-center justify-center text-sm leading-none">−</button>
                 <span className="text-xs text-slate-400 w-6 text-center tabular-nums">{queueFontSize}</span>
-                <button
-                  onClick={() => setQueueFontSize(s => Math.min(20, s + 1))}
-                  className="w-6 h-6 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold flex items-center justify-center text-sm leading-none"
-                >+</button>
+                <button onClick={() => setQueueFontSize(s => Math.min(20, s + 1))}
+                  className="w-6 h-6 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold flex items-center justify-center text-sm leading-none">+</button>
               </div>
             </span>
           </div>
-          <div className="divide-y divide-slate-50 max-h-96 overflow-y-auto">
-            {(queueItems as any[]).map((item: any, idx: number) => {
-              const cfg = QUEUE_STATUS_ICON[item.status] || { Icon: AlertCircle, cls: 'text-slate-400' };
-              const { Icon, cls } = cfg;
-              const contact = item.contacts as any;
-              const prevItem = idx > 0 ? (queueItems as any[])[idx - 1] : null;
-              const getTs = (i: any) => i.sent_at || i.scheduled_at;
-              const intervalSecs = prevItem && getTs(item) && getTs(prevItem)
-                ? Math.round((new Date(getTs(item)).getTime() - new Date(getTs(prevItem)).getTime()) / 1000)
-                : null;
-              return (
-                <div key={item.id}>
-                  {intervalSecs !== null && intervalSecs > 0 && (
-                    <div className="flex items-center gap-2 px-5 py-1">
-                      <div className="h-px flex-1 bg-slate-100" />
-                      <span className="text-xs text-slate-400 font-medium tabular-nums bg-slate-50 border border-slate-200 rounded-full px-2 py-0.5">+{intervalSecs}s</span>
-                      <div className="h-px flex-1 bg-slate-100" />
-                    </div>
-                  )}
-                  <div className="px-5 py-3 flex items-center gap-3" style={{ fontSize: queueFontSize }}>
-                    <Icon size={queueFontSize + 2} className={clsx('flex-shrink-0', cls)} />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-slate-800 truncate">{contact?.nome || '—'}</p>
-                      <p className="text-slate-400 font-mono" style={{ fontSize: queueFontSize - 2 }}>{contact?.telefone_normalizado || ''}</p>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <span className="badge bg-slate-50 text-slate-500" style={{ fontSize: queueFontSize - 3 }}>{item.tipo}</span>
-                      {item.sent_at && (
-                        <p className="text-emerald-500 mt-0.5" style={{ fontSize: queueFontSize - 3 }}>
-                          Enviado {new Date(item.sent_at).toLocaleTimeString('pt-BR')}
-                        </p>
-                      )}
-                      {!item.sent_at && item.scheduled_at && (
-                        <p className="text-slate-400 mt-0.5" style={{ fontSize: queueFontSize - 3 }}>
-                          Agendado {new Date(item.scheduled_at).toLocaleString('pt-BR')}
-                        </p>
-                      )}
-                      {item.erro && <p className="text-red-400 mt-0.5 truncate max-w-32" style={{ fontSize: queueFontSize - 3 }}>{item.erro}</p>}
+
+          {/* ── Vista cronológica ── */}
+          {queueView === 'cronologico' && (
+            <div className="divide-y divide-slate-50 max-h-[32rem] overflow-y-auto">
+              {(queueItems as any[]).map((item: any, idx: number) => {
+                const cfg = QUEUE_STATUS_ICON[item.status] || { Icon: AlertCircle, cls: 'text-slate-400' };
+                const { Icon, cls } = cfg;
+                const contact = item.contacts as any;
+                const prev = idx > 0 ? (queueItems as any[])[idx - 1] : null;
+                const getTs = (i: any) => i.sent_at || i.scheduled_at;
+                const diff = prev && getTs(item) && getTs(prev)
+                  ? Math.round((new Date(getTs(item)).getTime() - new Date(getTs(prev)).getTime()) / 1000) : null;
+                return (
+                  <div key={item.id}>
+                    {diff !== null && diff > 0 && (
+                      <div className="flex items-center gap-2 px-5 py-1">
+                        <div className="h-px flex-1 bg-slate-100" />
+                        <span className="text-xs text-slate-400 font-medium bg-slate-50 border border-slate-200 rounded-full px-2 py-0.5 tabular-nums">+{diff}s</span>
+                        <div className="h-px flex-1 bg-slate-100" />
+                      </div>
+                    )}
+                    <div className="px-5 py-3 flex items-center gap-3" style={{ fontSize: queueFontSize }}>
+                      <Icon size={queueFontSize + 2} className={clsx('flex-shrink-0', cls)} />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-slate-800 truncate">{contact?.nome || '—'}</p>
+                        <p className="text-slate-400 font-mono" style={{ fontSize: queueFontSize - 2 }}>{contact?.telefone_normalizado || ''}</p>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <span className="badge bg-slate-50 text-slate-500" style={{ fontSize: queueFontSize - 3 }}>{item.tipo}</span>
+                        {item.sent_at && <p className="text-emerald-500 mt-0.5" style={{ fontSize: queueFontSize - 3 }}>Enviado {new Date(item.sent_at).toLocaleTimeString('pt-BR')}</p>}
+                        {!item.sent_at && item.scheduled_at && <p className="text-slate-400 mt-0.5" style={{ fontSize: queueFontSize - 3 }}>Agendado {new Date(item.scheduled_at).toLocaleString('pt-BR')}</p>}
+                        {item.erro && <p className="text-red-400 mt-0.5 truncate max-w-32" style={{ fontSize: queueFontSize - 3 }}>{item.erro}</p>}
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* ── Vista agrupada por contato ── */}
+          {queueView === 'agrupado' && (
+            <div className="max-h-[32rem] overflow-y-auto p-4 space-y-2">
+              {groupedQueue.map((group, gIdx) => {
+                const contact = group[0].contacts as any;
+                const getTs = (i: any) => i.sent_at || i.scheduled_at;
+                const prevGroup = gIdx > 0 ? groupedQueue[gIdx - 1] : null;
+                // Intervalo entre contatos: última msg do grupo anterior → primeira msg deste grupo
+                const prevLastTs = prevGroup ? getTs(prevGroup[prevGroup.length - 1]) : null;
+                const thisFirstTs = getTs(group[0]);
+                const contactInterval = prevLastTs && thisFirstTs
+                  ? Math.round((new Date(thisFirstTs).getTime() - new Date(prevLastTs).getTime()) / 1000) : null;
+                const intervalMin = campaign?.intervalo_min ?? 90;
+                const intervalMax = campaign?.intervalo_max ?? 300;
+                const withinRange = contactInterval !== null && contactInterval >= intervalMin && contactInterval <= intervalMax;
+                const belowMin    = contactInterval !== null && contactInterval < intervalMin;
+                return (
+                  <div key={group[0].contact_id || gIdx}>
+                    {/* Indicador de intervalo entre contatos */}
+                    {contactInterval !== null && (
+                      <div className="flex items-center gap-2 py-2 px-2">
+                        <div className="h-px flex-1 bg-slate-200" />
+                        <div className={clsx(
+                          'flex items-center gap-1.5 text-xs font-semibold rounded-full px-3 py-1 border',
+                          withinRange ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
+                          belowMin    ? 'bg-red-50 text-red-500 border-red-200' :
+                                        'bg-amber-50 text-amber-600 border-amber-200',
+                        )}>
+                          <span className="tabular-nums">{contactInterval}s entre contatos</span>
+                          <span className="opacity-60">({intervalMin}–{intervalMax}s esperado)</span>
+                        </div>
+                        <div className="h-px flex-1 bg-slate-200" />
+                      </div>
+                    )}
+                    {/* Card do grupo */}
+                    <div className="bg-slate-50 rounded-xl border border-slate-100 overflow-hidden">
+                      <div className="px-4 py-2.5 bg-white border-b border-slate-100 flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0">
+                          <span className="text-[10px] font-bold text-slate-500">{gIdx + 1}</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-slate-800 truncate" style={{ fontSize: queueFontSize }}>{contact?.nome || '—'}</p>
+                          <p className="text-slate-400 font-mono" style={{ fontSize: queueFontSize - 2 }}>{contact?.telefone_normalizado || ''}</p>
+                        </div>
+                        <span className="text-xs text-slate-400">{group.length} msg{group.length !== 1 ? 's' : ''}</span>
+                      </div>
+                      <div className="divide-y divide-slate-100">
+                        {group.map((item: any, mIdx: number) => {
+                          const cfg = QUEUE_STATUS_ICON[item.status] || { Icon: AlertCircle, cls: 'text-slate-400' };
+                          const { Icon, cls } = cfg;
+                          const prevMsg = mIdx > 0 ? group[mIdx - 1] : null;
+                          const msgDiff = prevMsg && getTs(item) && getTs(prevMsg)
+                            ? Math.round((new Date(getTs(item)).getTime() - new Date(getTs(prevMsg)).getTime()) / 1000) : null;
+                          return (
+                            <div key={item.id} className="px-4 py-2.5 flex items-center gap-3" style={{ fontSize: queueFontSize }}>
+                              <Icon size={queueFontSize + 1} className={clsx('flex-shrink-0', cls)} />
+                              <span className="badge bg-white border border-slate-200 text-slate-500" style={{ fontSize: queueFontSize - 3 }}>{item.tipo}</span>
+                              <div className="flex-1" />
+                              {msgDiff !== null && msgDiff > 0 && (
+                                <span className="text-slate-300 tabular-nums" style={{ fontSize: queueFontSize - 3 }}>+{msgDiff}s</span>
+                              )}
+                              <div className="text-right flex-shrink-0">
+                                {item.sent_at && <p className="text-emerald-500" style={{ fontSize: queueFontSize - 3 }}>Enviado {new Date(item.sent_at).toLocaleTimeString('pt-BR')}</p>}
+                                {!item.sent_at && item.scheduled_at && <p className="text-slate-400" style={{ fontSize: queueFontSize - 3 }}>Agendado {new Date(item.scheduled_at).toLocaleString('pt-BR')}</p>}
+                                {item.erro && <p className="text-red-400 truncate max-w-36" style={{ fontSize: queueFontSize - 3 }}>{item.erro}</p>}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
