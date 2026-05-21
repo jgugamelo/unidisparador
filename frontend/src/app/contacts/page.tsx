@@ -1,5 +1,6 @@
 'use client';
 import { useState, useRef } from 'react';
+import * as XLSX from 'xlsx';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { contactsApi, normalizePhoneInput } from '@/lib/api';
 import {
@@ -9,27 +10,26 @@ import {
 } from 'lucide-react';
 
 function downloadTemplate() {
-  const rows = [
-    // Cabeçalho
-    ['nome', 'telefone', 'email', 'tags', 'origem', 'curso', 'categoria'],
-    // Linha de instruções (será ignorada pelo parser se não tiver telefone válido — serve de guia visual)
-    ['# INSTRUÇÕES: preencha a partir da linha 3. Campos obrigatórios: telefone. Tags: separe por vírgula.', '', '', '', '', '', ''],
-    // Exemplos
-    ['Maria Silva',     '11999990001', 'maria@email.com',   'lead,quente',   'instagram', 'Direito',    'Lead quente'],
-    ['João Oliveira',   '21988880002', '',                  'lead',          'site',      'Medicina',   ''],
-    ['Ana Souza',       '31977770003', 'ana@empresa.com',   'cliente,vip',   'indicacao', '',           'Cliente VIP'],
-    ['Carlos Lima',     '5511966660004','',                 '',              'manual',    '',           ''],
+  const data = [
+    { nome: 'Maria Silva',   telefone: '11999990001', email: 'maria@email.com', tags: 'lead,quente', origem: 'instagram', curso: 'Direito',  categoria: 'Lead quente' },
+    { nome: 'João Oliveira', telefone: '21988880002', email: '',                tags: 'lead',        origem: 'site',      curso: 'Medicina', categoria: '' },
+    { nome: 'Ana Souza',     telefone: '31977770003', email: 'ana@empresa.com', tags: 'cliente,vip', origem: 'indicacao', curso: '',         categoria: 'Cliente VIP' },
+    { nome: 'Carlos Lima',   telefone: '5511966660004', email: '',              tags: '',            origem: 'manual',    curso: '',         categoria: '' },
   ];
 
-  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\r\n');
-  const bom = '﻿'; // BOM para Excel reconhecer UTF-8
-  const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'template_contatos.csv';
-  a.click();
-  URL.revokeObjectURL(url);
+  const ws = XLSX.utils.json_to_sheet(data, {
+    header: ['nome', 'telefone', 'email', 'tags', 'origem', 'curso', 'categoria'],
+  });
+
+  // Largura das colunas
+  ws['!cols'] = [
+    { wch: 20 }, { wch: 18 }, { wch: 25 }, { wch: 20 },
+    { wch: 14 }, { wch: 16 }, { wch: 18 },
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Contatos');
+  XLSX.writeFile(wb, 'template_contatos.xlsx');
 }
 import clsx from 'clsx';
 
